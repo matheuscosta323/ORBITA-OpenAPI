@@ -1,0 +1,1083 @@
+openapi: 3.0.3
+
+info:
+  title: API ÓRBITA
+  version: 1.0.0
+  description: |
+    Contrato OpenAPI do MVP da plataforma ÓRBITA para gestão de demandas de inovação.
+
+    O contrato documenta autenticação, Desafios, Ideias, Match Ideia × Desafio,
+    Triagem/Priorização, Projetos/Kanban, Dashboard, Auditoria e sugestões de Match por IA.
+
+    A IA atua somente como apoio consultivo. Aprovação, rejeição, priorização e
+    movimentações críticas permanecem sob decisão humana (Human-in-the-Loop).
+
+servers:
+  - url: https://api.example.com
+    description: Servidor de produção (substituir quando o backend existir)
+  - url: http://localhost:5000
+    description: Ambiente local futuro
+
+tags:
+  - name: Autenticação
+  - name: Desafios
+  - name: Ideias
+  - name: IA
+  - name: Matches
+  - name: Triagens
+  - name: Projetos
+  - name: Dashboard
+  - name: Auditoria
+
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autenticar usuário
+      description: Autentica o usuário e retorna um token JWT.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: analista@orbita.com
+              senha: senha123
+      responses:
+        '200':
+          description: Autenticação realizada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/desafios:
+    get:
+      tags: [Desafios]
+      summary: Listar desafios
+      operationId: listarDesafios
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filtra por status.
+        - in: query
+          name: categoria
+          schema:
+            type: string
+          description: Filtra por categoria.
+        - in: query
+          name: busca
+          schema:
+            type: string
+          description: Busca textual por título ou descrição.
+      responses:
+        '200':
+          description: Lista de desafios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Desafio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      tags: [Desafios]
+      summary: Cadastrar desafio
+      operationId: criarDesafio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesafioInput'
+      responses:
+        '201':
+          description: Desafio criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Desafio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/desafios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Desafios]
+      summary: Consultar desafio
+      operationId: obterDesafio
+      responses:
+        '200':
+          description: Desafio encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Desafio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      tags: [Desafios]
+      summary: Atualizar desafio
+      operationId: atualizarDesafio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesafioInput'
+      responses:
+        '200':
+          description: Desafio atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Desafio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      tags: [Desafios]
+      summary: Arquivar ou excluir desafio
+      description: A implementação pode optar por exclusão lógica/arquivamento conforme regra de negócio.
+      operationId: removerDesafio
+      responses:
+        '204':
+          description: Operação realizada com sucesso.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/ideias:
+    get:
+      tags: [Ideias]
+      summary: Listar ideias
+      operationId: listarIdeias
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: categoria
+          schema:
+            type: string
+        - in: query
+          name: busca
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de ideias.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ideia'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      tags: [Ideias]
+      summary: Cadastrar ideia
+      operationId: criarIdeia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdeiaInput'
+      responses:
+        '201':
+          description: Ideia criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ideia'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/ideias/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Ideias]
+      summary: Consultar ideia
+      operationId: obterIdeia
+      responses:
+        '200':
+          description: Ideia encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ideia'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      tags: [Ideias]
+      summary: Atualizar ideia
+      operationId: atualizarIdeia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdeiaInput'
+      responses:
+        '200':
+          description: Ideia atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ideia'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      tags: [Ideias]
+      summary: Arquivar ou excluir ideia
+      operationId: removerIdeia
+      responses:
+        '204':
+          description: Operação realizada com sucesso.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/ia/matches/sugerir-ia:
+    post:
+      tags: [IA]
+      summary: Sugerir Matches Ideia × Desafio usando IA
+      description: |
+        Gera sugestões consultivas de compatibilidade. O resultado deve permanecer
+        PENDENTE até validação humana e não pode aprovar, rejeitar ou priorizar
+        automaticamente uma iniciativa.
+      operationId: sugerirMatchesIA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchSuggestionRequest'
+            example:
+              desafioId: 12
+              limiteResultados: 5
+      responses:
+        '200':
+          description: Sugestões de Match geradas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchSuggestionResponse'
+              example:
+                sugestoes:
+                  - matchId: 35
+                    ideiaId: 18
+                    scoreCompatibilidade: 0.87
+                    justificativa: A ideia responde ao problema descrito no desafio.
+                    statusMatch: PENDENTE
+                aiMetadata:
+                  humanInTheLoop: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          description: Limite de requisições excedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: Resposta inconsistente ou falha do provedor de IA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Serviço de IA indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Timeout do serviço de IA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/matches/{id}/validacao:
+    post:
+      tags: [Matches]
+      summary: Validar ou descartar um Match
+      description: Registra a decisão humana sobre uma sugestão de Match.
+      operationId: validarMatch
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchValidationRequest'
+      responses:
+        '200':
+          description: Validação registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/triagens:
+    post:
+      tags: [Triagens]
+      summary: Registrar triagem e priorização
+      description: Registra avaliação multicritério e parecer do Analista/Hub.
+      operationId: criarTriagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriagemInput'
+      responses:
+        '201':
+          description: Triagem registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Triagem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/projetos:
+    get:
+      tags: [Projetos]
+      summary: Listar projetos
+      operationId: listarProjetos
+      responses:
+        '200':
+          description: Lista de projetos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Projeto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      tags: [Projetos]
+      summary: Criar projeto a partir de iniciativa aprovada
+      operationId: criarProjeto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjetoInput'
+      responses:
+        '201':
+          description: Projeto criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Projeto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/projetos/{id}/kanban:
+    patch:
+      tags: [Projetos]
+      summary: Atualizar etapa do Kanban
+      operationId: atualizarKanban
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KanbanUpdate'
+      responses:
+        '200':
+          description: Etapa atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Projeto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/dashboard/resumo:
+    get:
+      tags: [Dashboard]
+      summary: Consultar indicadores básicos
+      operationId: obterResumoDashboard
+      responses:
+        '200':
+          description: Resumo executivo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResumo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+  /api/v1/auditoria:
+    get:
+      tags: [Auditoria]
+      summary: Consultar eventos de auditoria
+      operationId: listarAuditoria
+      parameters:
+        - in: query
+          name: entidade
+          schema:
+            type: string
+        - in: query
+          name: usuarioId
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Eventos de auditoria.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Auditoria'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Identificador do recurso.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  responses:
+    BadRequest:
+      description: Requisição inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Não autenticado ou token inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Autenticado, mas sem permissão para esta operação (perfil insuficiente).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            erro: FORBIDDEN
+            mensagem: O perfil do usuário não tem permissão para executar esta operação.
+    InternalServerError:
+      description: 'Erro interno ( Rollback da transação )'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            erro: INTERNAL_ERROR
+            mensagem: Não foi possível concluir a operação. Nenhuma alteração foi confirmada.
+    UnexpectedError:
+      description: Erro inesperado. 
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, senha]
+      properties:
+        email:
+          type: string
+          format: email
+          example: analista@orbita.com
+        senha:
+          type: string
+          format: password
+          example: senha123
+
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Validade em segundos.
+          example: 3600
+        usuario:
+          $ref: '#/components/schemas/UsuarioResumo'
+
+    UsuarioResumo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7
+        nome:
+          type: string
+          example: Ana Souza
+        email:
+          type: string
+          format: email
+          example: ana@orbita.com
+        area:
+          type: string
+          example: Inovação
+        perfis:
+          type: array
+          items:
+            type: string
+          example: [ANALISTA_HUB]
+
+    DesafioInput:
+      type: object
+      required: [titulo, descricaoProblema, areaDemandante, impacto, urgencia, categoria]
+      properties:
+        titulo:
+          type: string
+          maxLength: 150
+          example: Reduzir tempo de análise de propostas
+        descricaoProblema:
+          type: string
+          example: O processo atual é manual e disperso em múltiplos canais.
+        areaDemandante:
+          type: string
+          example: Operações
+        quemAfeta:
+          type: string
+          example: Analistas e gestores
+        impacto:
+          type: string
+          example: Alto
+        urgencia:
+          type: string
+          example: Média
+        categoria:
+          type: string
+          example: Eficiência Operacional
+        responsavelId:
+          type: integer
+          format: int64
+          example: 4
+        status:
+          type: string
+          example: ABERTO
+
+    Desafio:
+      allOf:
+        - $ref: '#/components/schemas/DesafioInput'
+        - type: object
+          required: [id, dataCriacao]
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 12
+            dataCriacao:
+              type: string
+              format: date-time
+            dataAtualizacao:
+              type: string
+              format: date-time
+              nullable: true
+
+    IdeiaInput:
+      type: object
+      required: [titulo, descricao, area, categoria, beneficioEsperado]
+      properties:
+        titulo:
+          type: string
+          maxLength: 150
+          example: Assistente para análise inicial de propostas
+        descricao:
+          type: string
+          example: Criar um fluxo automatizado para organizar e resumir submissões.
+        autorId:
+          type: integer
+          format: int64
+          example: 9
+        area:
+          type: string
+          example: Tecnologia
+        categoria:
+          type: string
+          example: Automação
+        beneficioEsperado:
+          type: string
+          example: Redução do tempo de triagem
+        status:
+          type: string
+          example: SUBMETIDA
+
+    Ideia:
+      allOf:
+        - $ref: '#/components/schemas/IdeiaInput'
+        - type: object
+          required: [id, dataCriacao]
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 18
+            dataCriacao:
+              type: string
+              format: date-time
+            dataAtualizacao:
+              type: string
+              format: date-time
+              nullable: true
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 35
+        desafioId:
+          type: integer
+          format: int64
+          example: 12
+        ideiaId:
+          type: integer
+          format: int64
+          example: 18
+        scoreCompatibilidade:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.87
+        justificativa:
+          type: string
+          example: A ideia responde diretamente ao gargalo descrito no desafio.
+        origemMatch:
+          type: string
+          enum: [MANUAL, REGRA, IA]
+          example: IA
+        validadoPor:
+          type: integer
+          format: int64
+          nullable: true
+        statusMatch:
+          type: string
+          enum: [PENDENTE, VALIDADO, REJEITADO]
+          example: PENDENTE
+        dataCriacao:
+          type: string
+          format: date-time
+
+    MatchSuggestionRequest:
+      type: object
+      required: [desafioId]
+      properties:
+        desafioId:
+          type: integer
+          format: int64
+          example: 12
+        limiteResultados:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          example: 5
+
+    MatchSuggestionItem:
+      type: object
+      required: [matchId, ideiaId, scoreCompatibilidade, justificativa, statusMatch]
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        ideiaId:
+          type: integer
+          format: int64
+        scoreCompatibilidade:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        justificativa:
+          type: string
+        statusMatch:
+          type: string
+          enum: [PENDENTE]
+
+    MatchSuggestionResponse:
+      type: object
+      required: [sugestoes, aiMetadata]
+      properties:
+        sugestoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchSuggestionItem'
+        aiMetadata:
+          type: object
+          properties:
+            humanInTheLoop:
+              type: boolean
+              example: true
+
+    MatchValidationRequest:
+      type: object
+      required: [decisao]
+      properties:
+        decisao:
+          type: string
+          enum: [VALIDAR, REJEITAR]
+          example: VALIDAR
+        motivo:
+          type: string
+          nullable: true
+          example: Compatibilidade confirmada pelo analista.
+
+    TriagemInput:
+      type: object
+      required: [matchId, impacto, urgencia, viabilidade, alinhamento, esforco, parecer]
+      properties:
+        matchId:
+          type: integer
+          format: int64
+          example: 35
+        impacto:
+          $ref: '#/components/schemas/NotaTriagem'
+        urgencia:
+          $ref: '#/components/schemas/NotaTriagem'
+        viabilidade:
+          $ref: '#/components/schemas/NotaTriagem'
+        alinhamento:
+          $ref: '#/components/schemas/NotaTriagem'
+        esforco:
+          $ref: '#/components/schemas/NotaTriagem'
+        parecer:
+          type: string
+          example: Ideia recomendada para experimentação.
+        decisao:
+          type: string
+          example: APROVAR_PARA_MVP
+
+    NotaTriagem:
+      type: integer
+      minimum: 1
+      maximum: 5
+      example: 4
+
+    Triagem:
+      allOf:
+        - $ref: '#/components/schemas/TriagemInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 21
+            avaliadorId:
+              type: integer
+              format: int64
+              example: 7
+            dataAvaliacao:
+              type: string
+              format: date-time
+
+    ProjetoInput:
+      type: object
+      required: [matchId, titulo, descricao]
+      properties:
+        matchId:
+          type: integer
+          format: int64
+          example: 35
+        titulo:
+          type: string
+          example: MVP de triagem inteligente
+        descricao:
+          type: string
+          example: Projeto criado a partir de ideia aprovada.
+        responsavelId:
+          type: integer
+          format: int64
+          example: 7
+        statusKanban:
+          type: string
+          enum: [APROVADO, PLANEJAMENTO, EM_DESENVOLVIMENTO, EM_TESTE, CONCLUIDO]
+          default: APROVADO
+
+    Projeto:
+      allOf:
+        - $ref: '#/components/schemas/ProjetoInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 6
+            dataCriacao:
+              type: string
+              format: date-time
+            dataAtualizacao:
+              type: string
+              format: date-time
+              nullable: true
+
+    KanbanUpdate:
+      type: object
+      required: [etapaDestino]
+      properties:
+        etapaDestino:
+          type: string
+          enum: [APROVADO, PLANEJAMENTO, EM_DESENVOLVIMENTO, EM_TESTE, CONCLUIDO]
+          example: EM_DESENVOLVIMENTO
+        observacao:
+          type: string
+          nullable: true
+          example: Início da implementação do MVP.
+
+    DashboardResumo:
+      type: object
+      properties:
+        desafiosAbertos:
+          type: integer
+          example: 14
+        ideiasSubmetidas:
+          type: integer
+          example: 38
+        ideiasTriadas:
+          type: integer
+          example: 26
+        matchesPendentes:
+          type: integer
+          example: 9
+        projetosEmExecucao:
+          type: integer
+          example: 5
+        taxaMatchValidado:
+          type: number
+          format: float
+          example: 0.72
+
+    Auditoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1001
+        usuarioId:
+          type: integer
+          format: int64
+          example: 7
+        entidade:
+          type: string
+          example: MATCH_IDEIA_DESAFIO
+        idRegistro:
+          type: integer
+          format: int64
+          example: 35
+        acao:
+          type: string
+          example: VALIDAR_MATCH
+        detalhes:
+          type: object
+          additionalProperties: true
+        dataHora:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required: [erro, mensagem]
+      properties:
+        erro:
+          type: string
+          example: VALIDATION_ERROR
+        mensagem:
+          type: string
+          example: Requisição inválida.
+        detalhes:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+security:
+  - bearerAuth: []
